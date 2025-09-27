@@ -7,8 +7,8 @@ import (
 )
 
 type Shader struct {
-	program  uint32
-	vao, vbo uint32
+	program       uint32
+	vao, vbo, ebo uint32
 }
 
 func checkCompileErrors(shader uint32, shaderType string) error {
@@ -87,40 +87,75 @@ func NewShader() Shader {
 
 	// GLSL Code
 	vertexShaderSource := `#version 330 core
-    layout (location = 0) in vec3 aPos;
-    void main()
-    {
-       gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
-    }`
+	layout (location = 0) in vec3 aPos;
+	layout (location = 1) in vec3 aColor;
+	layout (location = 2) in vec2 aTexCoord;
+
+	out vec3 ourColor;
+	out vec2 TexCoord;
+
+	void main()
+	{
+		gl_Position = vec4(aPos, 1.0);
+		ourColor = aColor;
+		TexCoord = vec2(aTexCoord.x, aTexCoord.y);
+	}` + "\x00"
 
 	fragmentShaderSource := `#version 330 core
-    out vec4 FragColor;
-    void main()
-    {
-       FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
-    }`
+	out vec4 FragColor;
+
+	in vec3 ourColor;
+	in vec2 TexCoord;
+
+	// texture sampler
+	uniform sampler2D texture1;
+
+	void main()
+	{
+		FragColor = texture(texture1, TexCoord);
+	}` + "\x00"
 
 	shader.program = newProgram(vertexShaderSource, fragmentShaderSource)
 
-	// Positions of the triangle
+	// Positions, colors, and the texture co-ordinates
 	vertices := []float32{
-		-0.5, -0.5, 0.0, // let
-		0.5, -0.5, 0.0, // right
-		0.0, 0.5, 0.0, // top
+		// positions          // colors           // texture coords
+		0.5, 0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, // top right
+		0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, // bottom right
+		-0.5, -0.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, // bottom let
+		-0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, // top let
+	}
+	indices := []uint32{
+		0, 1, 3, // first triangle
+		1, 2, 3, // second triangle
 	}
 
 	// VAO and VBO
 	gl.GenVertexArrays(1, &shader.vao)
 	gl.GenBuffers(1, &shader.vbo)
+	gl.GenBuffers(1, &shader.ebo)
 
 	gl.BindVertexArray(shader.vao)
 
-	gl.BindBuffer(gl.ARRAY_BUFFER, shader.vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
-
 	// sizeof(float) == 4
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, nil)
+	sizeofFloat := 4
+	gl.BindBuffer(gl.ARRAY_BUFFER, shader.vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*sizeofFloat, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, shader.ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*sizeofFloat, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	// Position attributes
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 8*int32(sizeofFloat), 0)
 	gl.EnableVertexAttribArray(0)
+
+	// Color attributes
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 8*int32(sizeofFloat), uintptr(3*sizeofFloat))
+	gl.EnableVertexAttribArray(1)
+
+	// Texture co-ordinate attributes
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, 8*int32(sizeofFloat), uintptr(6*sizeofFloat))
+	gl.EnableVertexAttribArray(2)
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 
@@ -130,5 +165,8 @@ func NewShader() Shader {
 }
 
 func (shader *Shader) Delete() {
+	gl.DeleteVertexArrays(1, &shader.vao)
+	gl.DeleteBuffers(1, &shader.vbo)
+	gl.DeleteBuffers(1, &shader.ebo)
 	gl.DeleteProgram(shader.program)
 }
