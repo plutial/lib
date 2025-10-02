@@ -14,10 +14,17 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
-func NewTexture(path string) (uint32, error) {
-	var texture uint32
-	gl.GenTextures(1, &texture)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
+type Texture struct {
+	ID uint32
+
+	// Size of the texture
+	Width, Height uint32
+}
+
+func NewTexture(path string) (Texture, error) {
+	var textureID uint32
+	gl.GenTextures(1, &textureID)
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
 
 	// Texture wrapping paramaters
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
@@ -30,7 +37,7 @@ func NewTexture(path string) (uint32, error) {
 	// Open the image file
 	imageFile, err := os.Open(path)
 	if err != nil {
-		return 0, fmt.Errorf("texture %q not found on disk: %v", path, err)
+		return Texture{}, fmt.Errorf("texture %q not found on disk: %v", path, err)
 	}
 	defer imageFile.Close()
 
@@ -43,7 +50,7 @@ func NewTexture(path string) (uint32, error) {
 	// Create a RGBA image
 	rgbaImage := image.NewRGBA(contents.Bounds())
 	if rgbaImage.Stride != rgbaImage.Rect.Size().X*4 {
-		return 0, fmt.Errorf("unsupported stride")
+		return Texture{}, fmt.Errorf("unsupported stride")
 	}
 	draw.Draw(rgbaImage, rgbaImage.Bounds(), contents, image.Point{0, 0}, draw.Src)
 
@@ -58,6 +65,11 @@ func NewTexture(path string) (uint32, error) {
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(rgbaImage.Pix))
 	gl.GenerateMipmap(gl.TEXTURE_2D)
+
+	// Store all the information within a structure
+	texture := Texture{
+		textureID, uint32(rgbaImage.Rect.Size().X), uint32(rgbaImage.Rect.Size().Y),
+	}
 
 	return texture, nil
 }

@@ -142,21 +142,17 @@ func NewShader() Shader {
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointerWithOffset(0, 4, gl.FLOAT, false, 4*int32(sizeofFloat), 0)
 
-	// Color attributes
-	/*gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 8*int32(sizeofFloat), uintptr(3*sizeofFloat))
-	gl.EnableVertexAttribArray(1)
-
-	// Texture co-ordinate attributes
-	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, 8*int32(sizeofFloat), uintptr(6*sizeofFloat))
-	gl.EnableVertexAttribArray(2)*/
+	// TODO: Color attributes
+	// gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 8*int32(sizeofFloat), uintptr(3*sizeofFloat))
+	// gl.EnableVertexAttribArray(1)
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 
+	// Unbind
 	gl.BindVertexArray(0)
 
-	// Projection of the window
-	projection := Matrix4Ortho(0, 800, 450, 0, -1, 1)
-	shader.SetMatrix4(&projection[0], "projection")
+	// Make the image NULL just in case
+	shader.SetInteger(0, "image")
 
 	return shader
 }
@@ -177,13 +173,16 @@ func (shader *Shader) SetMatrix4(matrix *float32, name string) {
 	gl.UniformMatrix4fv(gl.GetUniformLocation(shader.program, gl.Str(name+"\x00")), 1, false, matrix)
 }
 
-var abc float32
-
-func (shader *Shader) Render(x, y float32) {
+func (shader *Shader) Render(texture Texture, source glm.Vec4, destination glm.Vec4, angle float32) {
 	// Source rectangle
-	abc += 0.01
-	vector := glm.Vec4{abc, abc, abc, abc}
-	shader.SetVector4(&vector[0], "uvModel")
+	// x and y represent the position of the source (x, y)
+	// z and w represent the width and the height of the source
+
+	// Adjust the size of the source to the texture's size
+	source[2] /= float32(texture.Width)
+	source[3] /= float32(texture.Height)
+
+	shader.SetVector4(&source[0], "sourceUV")
 
 	// Destination rectangle
 	projection := glm.Ortho(0, 800, 450, 0, -1, 1)
@@ -193,21 +192,29 @@ func (shader *Shader) Render(x, y float32) {
 	model := glm.Ident4()
 
 	// Position
-	model = model.Mul4(glm.Translate3D(x, y, 0))
+	model = model.Mul4(glm.Translate3D(destination[0], destination[1], 0))
 
 	// Rotation
-	var angle float32 = 0.0
-	model = model.Mul4(glm.Translate3D(0.5*16, 0.5*16, 0.0))
+	model = model.Mul4(glm.Translate3D(0.5*destination[2], 0.5*destination[3], 0.0))
 	model = model.Mul4(glm.HomogRotate3DZ(angle))
-	model = model.Mul4(glm.Translate3D(-0.5*16, -0.5*16, 0.0))
+	model = model.Mul4(glm.Translate3D(-0.5*destination[2], -0.5*destination[3], 0.0))
 
 	// Size
-	model = model.Mul4(glm.Scale3D(16, 16, 1))
-
-	fmt.Println(model)
+	model = model.Mul4(glm.Scale3D(destination[2], destination[3], 1))
 
 	// Apply the matrix
 	shader.SetMatrix4(&model[0], "model")
+
+	// Apply the texture
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, texture.ID)
+
+	// Draw the triangles
+	gl.UseProgram(shader.program)
+	gl.BindVertexArray(shader.vao)
+	gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
+	gl.BindVertexArray(0)
+
 }
 
 func (shader *Shader) Delete() {

@@ -3,6 +3,10 @@ package main
 import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+
+	// Matrix
+	glm "github.com/go-gl/mathgl/mgl32"
+
 	"log"
 	"runtime"
 )
@@ -29,6 +33,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	source := glm.Vec4{0, 0, 1600, 1600}
+	destination1 := glm.Vec4{0, 0, 16, 16}
+	destination2 := glm.Vec4{16, 0, 16, 16}
+
 	for !window.ShouldClose() {
 		if glfw.GetCurrentContext().GetKey(glfw.KeyEscape) == glfw.Press {
 			window.SetShouldClose(true)
@@ -38,27 +46,9 @@ func main() {
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		shader.SetInteger(0, "image")
-		shader.Render(0, 0)
-
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, texture1)
-
-		// Draw the triangle
-		gl.UseProgram(shader.program)
-		gl.BindVertexArray(shader.vao)
-		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
-		gl.BindVertexArray(0)
-
-		shader.Render(16, 0)
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, texture2)
-
-		// Draw the triangle
-		gl.UseProgram(shader.program)
-		gl.BindVertexArray(shader.vao)
-		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
-		gl.BindVertexArray(0)
+		// Render the textures
+		shader.Render(texture1, source, destination1, 0)
+		shader.Render(texture2, source, destination2, 0)
 
 		// Do OpenGL stuff.
 		window.SwapBuffers()

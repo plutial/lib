@@ -3,6 +3,7 @@
 in vec2 TexCoords;
 out vec4 color;
 
+// Texture
 uniform sampler2D image;
 
 void main()
