@@ -1,12 +1,23 @@
 package main
 
 import (
-	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.3/glfw"
+	"image/color"
 	"log"
+
+	// GLFW
+	"github.com/go-gl/glfw/v3.3/glfw"
+
+	// OpenGL
+	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
-func Init() *glfw.Window {
+// Global window
+var window *glfw.Window
+
+// Global frame counter
+var frameCount int
+
+func Init() {
 	// Initialize GLFW
 	if err := glfw.Init(); err != nil {
 		panic(err)
@@ -16,21 +27,51 @@ func Init() *glfw.Window {
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 
-	window, err := glfw.CreateWindow(800, 450, "Testing", nil, nil)
+	var err error
+	window, err = glfw.CreateWindow(800, 450, "Testing", nil, nil)
 	if err != nil {
 		panic(err)
 	}
 
 	window.MakeContextCurrent()
 
+	// Frame buffer callback
 	glfw.GetCurrentContext().SetFramebufferSizeCallback(FramebufferSizeCallback)
+
+	// Key callback
+	glfw.GetCurrentContext().SetKeyCallback(KeyCallback)
 
 	// Initialize OpenGL
 	if err := gl.Init(); err != nil {
 		log.Fatalln(err)
 	}
+}
 
-	return window
+func ColorWindow(color color.RGBA) {
+	// Convert it to decimals before applying
+	gl.ClearColor(float32(color.R)/255, float32(color.G)/255, float32(color.B)/255, float32(color.A)/255)
+}
+
+func ClearWindow() {
+	gl.Clear(gl.COLOR_BUFFER_BIT)
+}
+
+func RenderWindow() {
+	window.SwapBuffers()
+
+	// Window updates
+	UpdateWindow()
+}
+
+func UpdateWindow() {
+	// Update the frame count
+	frameCount++
+
+	glfw.PollEvents()
+}
+
+func WindowShouldClose() bool {
+	return window.ShouldClose()
 }
 
 func FramebufferSizeCallback(window *glfw.Window, width, height int) {

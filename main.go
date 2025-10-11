@@ -1,8 +1,12 @@
 package main
 
 import (
-	"github.com/go-gl/gl/v3.3-core/gl"
+	"image/color"
+
 	"github.com/go-gl/glfw/v3.3/glfw"
+
+	"fmt"
+	"math/rand"
 
 	// Matrix
 	glm "github.com/go-gl/mathgl/mgl32"
@@ -11,12 +15,17 @@ import (
 	"runtime"
 )
 
+/*
+#undef _GNU_SOURCE
+*/
+import "C"
+
 func main() {
 	// This is needed to arrange that main() runs on main thread.
 	// See documentation for functions that are only allowed to be called from the main thread.
 	runtime.LockOSThread()
 
-	window := Init()
+	Init()
 	defer glfw.Terminate()
 
 	// Shaders
@@ -37,21 +46,26 @@ func main() {
 	destination1 := glm.Vec4{0, 0, 16, 16}
 	destination2 := glm.Vec4{16, 0, 16, 16}
 
-	for !window.ShouldClose() {
-		if glfw.GetCurrentContext().GetKey(glfw.KeyEscape) == glfw.Press {
-			window.SetShouldClose(true)
+	for !WindowShouldClose() {
+		if IsKeyPressed(KeyA) {
+			fmt.Println("p", rand.Int())
+		}
+		if IsKeyPressedRepeat(KeyA) {
+			fmt.Println("t", rand.Int())
+		}
+		if IsKeyReleased(KeyA) {
+			fmt.Println("r", rand.Int())
 		}
 
 		// Clear the screen
-		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+		color := color.RGBA{54, 78, 79, 255}
+		ColorWindow(color)
+		ClearWindow()
 
 		// Render the textures
 		shader.Render(texture1, source, destination1, 0)
 		shader.Render(texture2, source, destination2, 0)
 
-		// Do OpenGL stuff.
-		window.SwapBuffers()
-		glfw.PollEvents()
+		RenderWindow()
 	}
 }
