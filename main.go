@@ -42,9 +42,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var blank Texture
+
 	source := glm.Vec4{0, 0, 1600, 1600}
 	destination1 := glm.Vec4{0, 0, 16, 16}
 	destination2 := glm.Vec4{16, 0, 16, 16}
+	destination3 := glm.Vec4{32, 0, 16, 16}
 
 	for !WindowShouldClose() {
 		if IsKeyPressed(KeyA) {
@@ -65,6 +68,7 @@ func main() {
 		// Render the textures
 		shader.Render(texture1, source, destination1, 0)
 		shader.Render(texture2, source, destination2, 0)
+		shader.Render(blank, source, destination3, 0)
 
 		RenderWindow()
 	}

@@ -1,7 +1,6 @@
 #version 330 core
 // Split into vec2 position, vec2 texCoords
 layout (location = 0) in vec4 vertex; 
-//layout (location = 1) in vec3 aColor;
 
 out vec2 TexCoords;
 
@@ -21,5 +20,4 @@ void main()
     TexCoords = vertex.zw * sourceUV.zw + sourceUV.xy;
 
     gl_Position = projection * model * vec4(vertex.xy, 0.0, 1.0);
-    //ourColor = aColor;
 }

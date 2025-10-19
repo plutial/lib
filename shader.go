@@ -165,6 +165,10 @@ func (shader *Shader) SetVector2(vector *float32, name string) {
 	gl.Uniform2fv(gl.GetUniformLocation(shader.program, gl.Str(name+"\x00")), 1, vector)
 }
 
+func (shader *Shader) SetVector3(vector *float32, name string) {
+	gl.Uniform3fv(gl.GetUniformLocation(shader.program, gl.Str(name+"\x00")), 1, vector)
+}
+
 func (shader *Shader) SetVector4(vector *float32, name string) {
 	gl.Uniform4fv(gl.GetUniformLocation(shader.program, gl.Str(name+"\x00")), 1, vector)
 }
@@ -174,6 +178,9 @@ func (shader *Shader) SetMatrix4(matrix *float32, name string) {
 }
 
 func (shader *Shader) Render(texture Texture, source glm.Vec4, destination glm.Vec4, angle float32) {
+	ourColor := glm.Vec4{.4, .2, .2, 0.2}
+	shader.SetVector4(&ourColor[0], "ourColor")
+
 	// Source rectangle
 	// x and y represent the position of the source (x, y)
 	// z and w represent the width and the height of the source
@@ -214,7 +221,6 @@ func (shader *Shader) Render(texture Texture, source glm.Vec4, destination glm.V
 	gl.BindVertexArray(shader.vao)
 	gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
 	gl.BindVertexArray(0)
-
 }
 
 func (shader *Shader) Delete() {
